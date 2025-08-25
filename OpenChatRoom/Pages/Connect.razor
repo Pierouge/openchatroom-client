@@ -1,0 +1,67 @@
+@page "/connect"
+@layout Layout.EmptyLayout
+
+<div class="card login-card">
+    <h1 class="center-text">Server Information</h1>
+    <form class="center center-text">
+        @if (response != connectionResponse.noResponse){
+            if (response == connectionResponse.connectionSuccess){
+                <p class>@responseMessage</p>
+            }
+            else if (responseMessageDict.Keys.Contains(response)){
+                <p class="text-danger">@responseMessage</p>
+            }
+        }
+        <label for="server" class="field-label">Server</label>
+        <input id="server" class="center" type="text" name="server" @bind=server>
+        <div class="checkbox-label-container">
+            <label for="save-server">Remember Server</label>
+            <input id="save-server" type="checkbox" name="save-server" @bind=saveServer>
+        </div>
+        
+    </form>
+    <button class="center btn btn-primary" type="button" @onclick="connect">Connect</button>
+</div>
+
+@code {
+    private string server = string.Empty; // The server IP string
+    private bool saveServer = false;
+    private string responseMessage = string.Empty;
+    // An enum that encapsulates all types of response the overall connection process could have.
+    private enum connectionResponse{
+        noResponse,
+        unknownHost,
+        noServer,
+        connectionSuccess,
+        unknownException,
+        connectionError,
+        invalidAddress
+    }
+
+    // Association of the response type and its string error message.
+    private static readonly Dictionary<connectionResponse, string> responseMessageDict =
+        new Dictionary<connectionResponse, string>{
+                {connectionResponse.noResponse, string.Empty},
+                {connectionResponse.noServer, "Error: Please type in a server."},
+                {connectionResponse.unknownHost, "Error: Impossible to find such server."},
+                {connectionResponse.connectionSuccess, "Connection successful!"},
+                {connectionResponse.connectionError, "Error: Impossible to establish the connection."},
+                {connectionResponse.unknownException, "Error: An unknown error occured."},
+                {connectionResponse.invalidAddress, "Error: The address typed is invalid."}
+            };
+
+    private connectionResponse response = connectionResponse.noResponse;
+    private void connect(){
+        // Checks if the server IP is filled in
+        if (String.IsNullOrWhiteSpace(server)) {
+            response = connectionResponse.noServer;
+        }
+        else{
+            
+        }
+
+        // Sets the correct error message to the string
+        if (responseMessageDict.Keys.Contains(response)) 
+            responseMessage = responseMessageDict.GetValueOrDefault(response, string.Empty);
+    }
+}
