@@ -1,0 +1,53 @@
+.login-card{
+    margin-left: 30%;
+    margin-right: 30%;
+    margin-top: 1%;
+    margin-bottom: 1%;
+
+    padding: 1%;
+    
+}
+
+form{
+    display: flex;
+    flex-direction: column;
+}
+
+form label,
+form input {
+    width: 30%;
+    margin-bottom: 0.5rem;
+}
+
+form label[for="save-login"]{
+    width: 50%;
+    margin-bottom: 0.5rem;
+}
+
+form label.field-label{
+    display: block;
+    text-align: left;
+}
+
+.checkbox-label-container{
+    display: inline-block;
+    width: 40%;
+    text-align: center;
+}
+
+.checkbox-label-container label,
+.checkbox-label-container input[type="checkbox"] {
+    display: inline-block; /* sit side-by-side */
+    vertical-align: middle; /* align them nicely on the same baseline */
+    margin: 0; /* remove default spacing */
+}
+
+.checkbox-label-container label {
+    margin-right: 0.25rem; /* tiny gap before the checkbox */
+}
+
+.btn{
+    margin-top: 1%;
+    margin-left: 30%;
+    margin-right: 30%;
+}

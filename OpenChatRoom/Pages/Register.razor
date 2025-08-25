@@ -1,0 +1,22 @@
+@page "/register"
+@layout Layout.EmptyLayout
+
+<div class="card login-card">
+    <h1 class="center-text">Register Account Information</h1>
+    <form class="center center-text">
+        <label for="username" class="field-label">Username</label>
+        <input id="username" class="center" type="text" name="username">
+        <label for="visiblename" class="field-label">Visible Name</label>
+        <input id="visiblename" class="center" type="text" name="visiblename">
+        <label for="password" class="field-label">Password</label>
+        <input id="password" class="center" type="text" name="password">
+        <label for="confirm-password" class="field-label">Confirm Password</label>
+        <input id="confirm-password" class="center" type="password" name="confirm-password">
+        <a href="/login">Login</a>
+        <div class="checkbox-label-container">
+            <label for="save-login">Remember Login</label>
+            <input id="save-login" type="checkbox" name="save-login">
+        </div>
+    </form>
+    <button class="center btn btn-primary" type="button">Register</button>
+</div>
