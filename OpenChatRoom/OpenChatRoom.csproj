@@ -9,7 +9,10 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.8" PrivateAssets="all" />
-    <PackageReference Include="srp" Version="*" />
+    <PackageReference Include="srp" Version="*" /> <!-- Last tested version: 1.0.7 -->
+    <PackageReference Include="Blazored.SessionStorage" Version="2.4.0" />
+    <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
+
   </ItemGroup>
 
 </Project>
