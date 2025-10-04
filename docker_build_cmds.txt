@@ -1,0 +1,9 @@
+docker build -t openchatroom-client --build-arg Environment=Development .
+
+OR
+
+docker build -t openchatroom-client .
+
+docker save -o openchatroom-client.tar openchatroom-client
+
+docker run --name openchatroom-client -d -p 80:8080 openchatroom-client

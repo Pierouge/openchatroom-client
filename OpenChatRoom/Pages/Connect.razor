@@ -38,7 +38,6 @@
                 if (httpResponse.IsSuccessStatusCode) {
                     connectionResponse = ConnectionResponseModel.connectionResponse.connectionSuccess;
                     sessionStorage.SetItem<string>("server", apiClient.getBaseAddressString());
-                    // TODO: try and encrypt the server in a reversible way
                     Navigation.NavigateTo("/login");
                 }
                 else connectionResponse = ConnectionResponseModel.connectionResponse.unknownException;

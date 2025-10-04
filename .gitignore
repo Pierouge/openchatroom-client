@@ -16,3 +16,4 @@
 *.db-wal
 *.fake
 *.tmp
+*.tar

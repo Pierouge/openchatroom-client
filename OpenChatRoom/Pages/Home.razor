@@ -15,8 +15,6 @@ Redirecting...
             if (string.IsNullOrEmpty(storedServer)) storedServer = localStorage.GetItem<string>("server");
             if (string.IsNullOrEmpty(storedServer)) Navigation.NavigateTo("/connect");
             else {
-                // TODO: Decryption system
-
                 apiClient.setBaseAddress(storedServer); // Update the server
                 HttpResponseMessage httpResponse = await apiClient.GetAsync("check");
                 
