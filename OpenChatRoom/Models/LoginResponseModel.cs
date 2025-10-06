@@ -8,6 +8,7 @@ public static class LoginResponseModel
         notMatchingPasswords,
         privateKeyError,
         alreadyExistingUser,
+        wrongUsernameCharacters,
         unknownError
     }
 
@@ -19,6 +20,8 @@ public static class LoginResponseModel
                 {loginResponse.notMatchingPasswords, "Error: the passwords do not match"},
                 {loginResponse.privateKeyError, "Error while generating the private key"},
                 {loginResponse.alreadyExistingUser, "Error: this user already exists"},
+                {loginResponse.wrongUsernameCharacters,
+                "Error: illegal characters detected in the username, please only use alphanumeric characters." },
                 {loginResponse.unknownError, "An unknown error occured"}
             };
 

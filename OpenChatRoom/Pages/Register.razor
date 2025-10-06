@@ -3,6 +3,8 @@
 @using System.Text.Json
 @using System.Threading.Tasks.Dataflow
 @using System.Text
+@using System.Text.RegularExpressions
+@using System.Text.Json.Serialization
 @layout Layout.EmptyLayout
 
 @inject ApiClient apiClient
@@ -67,7 +69,13 @@
             responseString = LoginResponseModel.getMessageFromResponse(loginResponse);
             return;
         }
-        // TODO: Add Verification rules for username
+
+        username = username.ToLower();
+        if (!Regex.IsMatch(username, pattern: "^[a-z0-9]+$")) {
+            loginResponse = LoginResponseModel.loginResponse.wrongUsernameCharacters;
+            responseString = LoginResponseModel.getMessageFromResponse(loginResponse);
+            return;
+        }
 
         // Generate all info about the user
         SrpClient srpClient = new SrpClient();
@@ -83,8 +91,9 @@
         // Send info about the user
         User user = new User(username, visibleName, verifier, salt);
 
-        string jsonUser = JsonSerializer.Serialize(user);
-        StringContent content = new StringContent(jsonUser, Encoding.UTF8, mediaType: "application/json");
+        string jsonString = JsonSerializer.Serialize(new object[] {user, saveLogin});
+        
+        StringContent content = new StringContent(jsonString, Encoding.UTF8, mediaType: "application/json");
 
         // Get the XSRF token
         await apiClient.getCsrfToken();
@@ -94,7 +103,16 @@
         // Check the response and either shows error code, or go to app
         switch (responseMessage.StatusCode){
             case System.Net.HttpStatusCode.Created: {
-                // TODO: store data 
+
+                // Save data in local storage
+                if (saveLogin){
+                    localStorage.SetItemAsString("username", data:username);
+                    string? storedServer = sessionStorage.GetItem<string?>("server");
+                    if (string.IsNullOrEmpty(storedServer)) Navigation.NavigateTo("connect");
+                    else localStorage.SetItemAsString("server", storedServer);
+                }
+                
+                sessionStorage.SetItemAsString("username", data:username);
                 Navigation.NavigateTo("/app");
                 break;
             }

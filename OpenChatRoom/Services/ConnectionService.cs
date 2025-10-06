@@ -4,8 +4,8 @@ using Microsoft.AspNetCore.Components;
 
 public static class ConnectionService
 {
-    public static async Task<bool> checkConnection(ISyncSessionStorageService sessionStorage, ISyncLocalStorageService localStorage,
-        ApiClient apiClient)
+    public static async Task<bool> checkConnection(ISyncSessionStorageService sessionStorage,
+     ISyncLocalStorageService localStorage, ApiClient apiClient)
     {
         try
         {
