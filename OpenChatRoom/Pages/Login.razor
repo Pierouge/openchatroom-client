@@ -1,22 +1,44 @@
 @page "/login"
 @layout Layout.EmptyLayout
+@inject ApiClient apiClient
+@inject NavigationManager Navigation
+@inject Blazored.SessionStorage.ISyncSessionStorageService sessionStorage
+@inject Blazored.LocalStorage.ISyncLocalStorageService localStorage
 
 <div class="card login-card">
     <h1 class="center-text">Account Login Information</h1>
     <form class="center center-text">
         <label for="username" class="field-label">Username</label>
-        <input id="username" class="center" type="text" name="username">
+        <input id="username" class="center" type="text" name="username" @bind="username">
         <label for="password" class="field-label">Password</label>
-        <input id="password" class="center" type="password" name="password">
+        <input id="password" class="center" type="password" name="password" @bind="password">
         <a href="/register">Register</a>
         <div class="checkbox-label-container">
             <label for="save-login">Remember Login</label>
-            <input id="save-login" type="checkbox" name="save-login">
+            <input id="save-login" type="checkbox" name="save-login" @bind="saveLogin">
         </div>
     </form>
-    <button class="center btn btn-primary" type="button">Login</button>
+    <button class="center btn btn-primary" type="button" @onclick="login">Login</button>
 </div>
 
 @code{
-    
+    private string username = string.Empty;
+    private string password = string.Empty;
+    private bool saveLogin = false;
+
+    protected async override Task OnInitializedAsync()
+    {
+        base.OnInitialized();
+        try{
+            if(!await ConnectionService.checkConnection(sessionStorage, localStorage, apiClient))
+                Navigation.NavigateTo("connect");
+        }
+        catch(NavigationException){ // Catch the first error, as it crashes the whole system
+            throw; // Then rethrow the error so Blazor still navigates to the next page
+        }
+    }
+
+    private void login(){
+        
+    }
 }

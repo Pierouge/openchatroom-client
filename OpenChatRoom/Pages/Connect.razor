@@ -6,7 +6,7 @@
 
 <div class="card login-card">
     <h1 class="center-text">Server Information</h1>
-    <form class="center center-text">
+    <form class="center center-text" @onsubmit="connect">
         @if (connectionResponse != ConnectionResponseModel.connectionResponse.noResponse){
             if (connectionResponse == ConnectionResponseModel.connectionResponse.connectionSuccess){
                 <p class>@responseMessage</p>
@@ -47,13 +47,13 @@
             }
             catch (AggregateException aggrEx){
                 foreach (var innerEx in aggrEx.Flatten().InnerExceptions)
-            {
-                if (innerEx is HttpRequestException httpEx)
                 {
-                    connectionResponse = ConnectionResponseModel.httpErrorToResponseCode(httpEx.HttpRequestError);
+                    if (innerEx is HttpRequestException httpEx)
+                    {
+                        connectionResponse = ConnectionResponseModel.httpErrorToResponseCode(httpEx.HttpRequestError);
+                    }
+                    throw aggrEx;
                 }
-                throw aggrEx;
-            }
             }
         }
 

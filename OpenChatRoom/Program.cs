@@ -10,8 +10,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
-// Add a second http client for the API calls
-builder.Services.AddScoped(sp => new HttpClient());
+// Add a apiClient for the api Requests
 builder.Services.AddScoped<ApiClient>();
 
 // Add Local and Session Storage Components

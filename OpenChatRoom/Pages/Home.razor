@@ -9,33 +9,18 @@ Redirecting...
 
 @code{
     protected async override Task OnInitializedAsync(){
+
+        // TODO: login check
+
+        // Connect check
         try{
-            // Check if the server is stored in session or local storage
-            string? storedServer = sessionStorage.GetItem<string?>("server");
-            if (string.IsNullOrEmpty(storedServer)) storedServer = localStorage.GetItem<string>("server");
-            if (string.IsNullOrEmpty(storedServer)) Navigation.NavigateTo("/connect");
-            else {
-                apiClient.setBaseAddress(storedServer); // Update the server
-                HttpResponseMessage httpResponse = await apiClient.GetAsync("check");
-                
-                if (httpResponse.IsSuccessStatusCode) Navigation.NavigateTo("/login");
-            }
+            if(await ConnectionService.checkConnection(sessionStorage, localStorage, apiClient)){
+                    Navigation.NavigateTo("login");
+                }
+            else Navigation.NavigateTo("connect");
         }
         catch(NavigationException){ // Catch the first error, as it crashes the whole system
             throw; // Then rethrow the error so Blazor still navigates to the next page
-        }
-        catch (HttpRequestException){
-            Navigation.NavigateTo("/connect");
-        }
-        catch (AggregateException aggrEx){
-            foreach (var innerEx in aggrEx.Flatten().InnerExceptions)
-            {
-                if (innerEx is HttpRequestException httpEx)
-                {
-                    Navigation.NavigateTo("/connect");
-                }
-                else if (!(innerEx is NavigationException)) throw aggrEx;
-            }
         }
     }
 }
