@@ -9,11 +9,14 @@ public static class LoginResponseModel
         privateKeyError,
         alreadyExistingUser,
         wrongUsernameCharacters,
+        userNotFound,
+        srpError,
         unknownError
     }
 
     public static readonly Dictionary<loginResponse, string> responseMessageDict =
-        new Dictionary<loginResponse, string>{
+        new()
+        {
                 {loginResponse.noResponse, string.Empty},
                 {loginResponse.wrongCredentials, "Error: Wrong credentials"},
                 {loginResponse.emptyFields, "Error: Some fields are empty"},
@@ -22,7 +25,9 @@ public static class LoginResponseModel
                 {loginResponse.alreadyExistingUser, "Error: this user already exists"},
                 {loginResponse.wrongUsernameCharacters,
                 "Error: illegal characters detected in the username, please only use alphanumeric characters." },
-                {loginResponse.unknownError, "An unknown error occured"}
+                {loginResponse.userNotFound, "Error: such user was not found."},
+                {loginResponse.srpError, "An error occured in the login procedure."},
+                { loginResponse.unknownError, "An unknown error occured"}
             };
 
     public static string getMessageFromResponse(loginResponse response)

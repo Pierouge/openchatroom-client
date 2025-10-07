@@ -47,8 +47,14 @@
     {
         base.OnInitialized();
         try{
-            if(!await ConnectionService.checkConnection(sessionStorage, localStorage, apiClient))
-                Navigation.NavigateTo("connect");
+            if(!await ConnectionService.checkConnection(sessionStorage, localStorage, apiClient)){
+                Navigation.NavigateTo(uri: "connect");
+                return;
+            }
+            else if (await ConnectionService.checkLogin(sessionStorage, localStorage, apiClient)){
+                Navigation.NavigateTo(uri: "app");
+                return;
+            }
         }
         catch(NavigationException){ // Catch the first error, as it crashes the whole system
             throw; // Then rethrow the error so Blazor still navigates to the next page
@@ -114,7 +120,7 @@
                 
                 sessionStorage.SetItemAsString("username", data:username);
                 Navigation.NavigateTo("/app");
-                break;
+                return;
             }
             case System.Net.HttpStatusCode.Conflict:
             {

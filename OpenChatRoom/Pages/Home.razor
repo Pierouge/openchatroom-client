@@ -14,9 +14,10 @@ Redirecting...
 
         // Connect check
         try{
-            if(await ConnectionService.checkConnection(sessionStorage, localStorage, apiClient)){
-                    Navigation.NavigateTo("login");
-                }
+            if (await ConnectionService.checkLogin(sessionStorage, localStorage, apiClient))
+                Navigation.NavigateTo("app");
+            if(await ConnectionService.checkConnection(sessionStorage, localStorage, apiClient))
+                Navigation.NavigateTo("login");
             else Navigation.NavigateTo("connect");
         }
         catch(NavigationException){ // Catch the first error, as it crashes the whole system
