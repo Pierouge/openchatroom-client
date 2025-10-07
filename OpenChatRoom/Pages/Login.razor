@@ -1,18 +1,156 @@
 @page "/login"
+@using SecureRemotePassword
+@using System.Threading.Tasks
+@using System.Security
+@using System.Text.Json
+@using System.Text
+@using System.Net
 @layout Layout.EmptyLayout
+@inject ApiClient apiClient
+@inject NavigationManager Navigation
+@inject Blazored.SessionStorage.ISyncSessionStorageService sessionStorage
+@inject Blazored.LocalStorage.ISyncLocalStorageService localStorage
 
 <div class="card login-card">
     <h1 class="center-text">Account Login Information</h1>
     <form class="center center-text">
+        @if(loginResponse!=LoginResponseModel.loginResponse.noResponse){
+            <p class="text-danger">@responseString</p>
+        }
         <label for="username" class="field-label">Username</label>
-        <input id="username" class="center" type="text" name="username">
+        <input id="username" class="center" type="text" name="username" @bind="username">
         <label for="password" class="field-label">Password</label>
-        <input id="password" class="center" type="password" name="password">
+        <input id="password" class="center" type="password" name="password" @bind="password">
         <a href="/register">Register</a>
         <div class="checkbox-label-container">
             <label for="save-login">Remember Login</label>
-            <input id="save-login" type="checkbox" name="save-login">
+            <input id="save-login" type="checkbox" name="save-login" @bind="saveLogin">
         </div>
     </form>
-    <button class="center btn btn-primary" type="button">Login</button>
+    <button class="center btn btn-primary" type="button" @onclick="login">Login</button>
 </div>
+
+@code{
+    private string username = string.Empty;
+    private string password = string.Empty;
+    private bool saveLogin = false;
+    private LoginResponseModel.loginResponse loginResponse = LoginResponseModel.loginResponse.noResponse;
+    private string responseString = string.Empty;
+    protected async override Task OnInitializedAsync()
+    {
+        base.OnInitialized();
+        try{
+            if(!await ConnectionService.checkConnection(sessionStorage, localStorage, apiClient)){
+                Navigation.NavigateTo(uri: "connect");
+                return;
+            }
+            else if (await ConnectionService.checkLogin(sessionStorage, localStorage, apiClient)){
+                Navigation.NavigateTo(uri: "app");
+                return;
+            }
+        }
+        catch(NavigationException){ // Catch the first error, as it crashes the whole system
+            throw; // Then rethrow the error so Blazor still navigates to the next page
+        }
+    }
+
+    private async Task login(){
+        if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+        {
+            loginResponse = LoginResponseModel.loginResponse.emptyFields;
+            responseString = LoginResponseModel.getMessageFromResponse(loginResponse);
+            return;
+        }
+
+        // First phase of SRP
+        SrpClient client = new SrpClient();
+        SrpEphemeral clientEphemeral = client.GenerateEphemeral();
+
+        string endpoint = string.Concat("user/getSRPInfo/", username, "/", clientEphemeral.Public);
+
+        HttpResponseMessage responseMessage = await apiClient.GetAsync(endpoint);
+
+        switch (responseMessage.StatusCode){
+            case System.Net.HttpStatusCode.OK: break;
+            case System.Net.HttpStatusCode.NotFound: {
+                loginResponse = LoginResponseModel.loginResponse.userNotFound;
+                responseString = LoginResponseModel.getMessageFromResponse(loginResponse);
+                return;
+            }
+            default:{
+                loginResponse = LoginResponseModel.loginResponse.unknownError;
+                responseString = string.Concat(LoginResponseModel.getMessageFromResponse(loginResponse), ": ", 
+                    responseMessage.ReasonPhrase);
+                return;
+            }
+        }
+
+        //SRP Phase 3 now
+        string stringP3Content = await responseMessage.Content.ReadAsStringAsync();
+
+        Dictionary<string, string>? contentDict = System.Text.Json.JsonSerializer.Deserialize
+        <Dictionary<string, string>>(stringP3Content);
+        if (contentDict == null)
+        {
+            loginResponse = LoginResponseModel.loginResponse.srpError;
+            responseString = LoginResponseModel.getMessageFromResponse(loginResponse);
+            return;
+        }
+
+        // Get the values from server
+        string serverEphemeralPublic = contentDict["server_public_ephemeral"];
+        string salt = contentDict["salt"];
+
+        // Send proof to server
+        string privateKey = client.DerivePrivateKey(salt, username, password);
+        SrpSession clientSession = client.DeriveSession(clientEphemeral.Secret, serverEphemeralPublic,
+            salt, username, privateKey);
+        
+        Dictionary<string, string> srpP4Dict = [];
+        srpP4Dict.Add("proof", clientSession.Proof);
+        srpP4Dict.Add("saveLogin", saveLogin.ToString());
+
+        string srpP4ContentString = JsonSerializer.Serialize(srpP4Dict);
+        StringContent srpP4Content = new StringContent(srpP4ContentString, Encoding.UTF8, mediaType: "application/json");
+
+        responseMessage = await apiClient.PostAsync("user/srp-m2", srpP4Content);
+
+        switch (responseMessage.StatusCode){
+            case System.Net.HttpStatusCode.OK: break;
+            case HttpStatusCode.Unauthorized: {
+                loginResponse = LoginResponseModel.loginResponse.wrongCredentials;
+                responseString = LoginResponseModel.getMessageFromResponse(loginResponse);
+                return;
+            }
+            default:{
+                loginResponse = LoginResponseModel.loginResponse.unknownError;
+                responseString = string.Concat(LoginResponseModel.getMessageFromResponse(loginResponse), ": ", 
+                    responseMessage.ReasonPhrase);
+                return;
+            }
+        }
+
+        // SRP Phase 5
+        string serverSessionProof = await responseMessage.Content.ReadAsStringAsync();
+
+        try{
+            client.VerifySession(clientEphemeral.Public, clientSession, serverSessionProof);
+        }
+        catch(SecurityException){
+            loginResponse = LoginResponseModel.loginResponse.srpError;
+            responseString = LoginResponseModel.getMessageFromResponse(loginResponse);
+            return;
+        }
+
+        // Move on to app and save data if saveLogin
+        if (saveLogin){
+            localStorage.SetItemAsString("username", data:username);
+            string? storedServer = sessionStorage.GetItem<string?>("server");
+            if (string.IsNullOrEmpty(storedServer)) Navigation.NavigateTo("connect");
+            else localStorage.SetItemAsString("server", storedServer);
+        }
+
+        sessionStorage.SetItemAsString("username", data:username);
+        Navigation.NavigateTo("/app");
+    }
+}

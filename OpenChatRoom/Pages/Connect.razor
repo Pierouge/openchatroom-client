@@ -1,0 +1,62 @@
+@page "/connect"
+@layout Layout.EmptyLayout
+@inject ApiClient apiClient
+@inject Blazored.SessionStorage.ISyncSessionStorageService sessionStorage
+@inject NavigationManager Navigation
+
+<div class="card login-card">
+    <h1 class="center-text">Server Information</h1>
+    <form class="center center-text" @onsubmit="connect">
+        @if (connectionResponse != ConnectionResponseModel.connectionResponse.noResponse){
+            if (connectionResponse == ConnectionResponseModel.connectionResponse.connectionSuccess){
+                <p class>@responseMessage</p>
+            }
+            else if (ConnectionResponseModel.responseMessageDict.Keys.Contains(connectionResponse)){
+                <p class="text-danger">@responseMessage</p>
+            }
+        }
+        <label for="server" class="field-label">Server</label>
+        <input id="server" class="center" type="text" name="server" @bind=server>
+        
+    </form>
+    <button class="center btn btn-primary" type="button" @onclick="connect">Connect</button>
+</div>
+
+@code {
+    private string server = string.Empty; // The server IP string
+    private string responseMessage = string.Empty;
+    private ConnectionResponseModel.connectionResponse connectionResponse = ConnectionResponseModel.connectionResponse.noResponse;
+    private async Task connect(){
+        // Checks if the server IP is filled in
+        if (String.IsNullOrWhiteSpace(server)) {
+            connectionResponse = ConnectionResponseModel.connectionResponse.noServer;
+        }
+        else{
+            apiClient.setBaseAddress(server); // Update the server
+            try{
+                HttpResponseMessage httpResponse = await apiClient.GetAsync("check");
+                if (httpResponse.IsSuccessStatusCode) {
+                    connectionResponse = ConnectionResponseModel.connectionResponse.connectionSuccess;
+                    sessionStorage.SetItem<string>("server", apiClient.getBaseAddressString());
+                    Navigation.NavigateTo("/login");
+                }
+                else connectionResponse = ConnectionResponseModel.connectionResponse.unknownException;
+            }
+            catch (HttpRequestException ex){
+                connectionResponse = ConnectionResponseModel.httpErrorToResponseCode(ex.HttpRequestError);
+            }
+            catch (AggregateException aggrEx){
+                foreach (var innerEx in aggrEx.Flatten().InnerExceptions)
+                {
+                    if (innerEx is HttpRequestException httpEx)
+                    {
+                        connectionResponse = ConnectionResponseModel.httpErrorToResponseCode(httpEx.HttpRequestError);
+                    }
+                    throw aggrEx;
+                }
+            }
+        }
+
+        responseMessage = ConnectionResponseModel.getMessageFromResponse(connectionResponse);
+    }
+}

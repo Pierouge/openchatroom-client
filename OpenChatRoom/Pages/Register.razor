@@ -1,22 +1,140 @@
 @page "/register"
+@using SecureRemotePassword
+@using System.Text.Json
+@using System.Threading.Tasks.Dataflow
+@using System.Text
+@using System.Text.RegularExpressions
+@using System.Text.Json.Serialization
 @layout Layout.EmptyLayout
+
+@inject ApiClient apiClient
+@inject NavigationManager Navigation
+@inject Blazored.SessionStorage.ISyncSessionStorageService sessionStorage
+@inject Blazored.LocalStorage.ISyncLocalStorageService localStorage
 
 <div class="card login-card">
     <h1 class="center-text">Register Account Information</h1>
-    <form class="center center-text">
+    <form class="center center-text" @onsubmit="register">
+        @if(loginResponse!=LoginResponseModel.loginResponse.noResponse){
+            <p class="text-danger">@responseString</p>
+        }
         <label for="username" class="field-label">Username</label>
-        <input id="username" class="center" type="text" name="username">
+        <input id="username" class="center" type="text" name="username" @bind="username">
         <label for="visiblename" class="field-label">Visible Name</label>
-        <input id="visiblename" class="center" type="text" name="visiblename">
+        <input id="visiblename" class="center" type="text" name="visiblename" @bind="visibleName">
         <label for="password" class="field-label">Password</label>
-        <input id="password" class="center" type="text" name="password">
+        <input id="password" class="center" type="password" name="password" @bind="password">
         <label for="confirm-password" class="field-label">Confirm Password</label>
-        <input id="confirm-password" class="center" type="password" name="confirm-password">
+        <input id="confirm-password" class="center" type="password" name="confirm-password" @bind="confirmPassword">
         <a href="/login">Login</a>
         <div class="checkbox-label-container">
             <label for="save-login">Remember Login</label>
-            <input id="save-login" type="checkbox" name="save-login">
+            <input id="save-login" type="checkbox" name="save-login" @bind="saveLogin">
         </div>
     </form>
-    <button class="center btn btn-primary" type="button">Register</button>
+    <button class="center btn btn-primary" type="button" @onclick="register">Register</button>
 </div>
+
+@code {
+    private string username = string.Empty;
+    private string visibleName = string.Empty;
+    private string password = string.Empty;
+    private string confirmPassword = string.Empty;
+    private bool saveLogin = false;
+    private LoginResponseModel.loginResponse loginResponse = LoginResponseModel.loginResponse.noResponse;
+    private string responseString = string.Empty;
+    protected async override Task OnInitializedAsync()
+    {
+        base.OnInitialized();
+        try{
+            if(!await ConnectionService.checkConnection(sessionStorage, localStorage, apiClient)){
+                Navigation.NavigateTo(uri: "connect");
+                return;
+            }
+            else if (await ConnectionService.checkLogin(sessionStorage, localStorage, apiClient)){
+                Navigation.NavigateTo(uri: "app");
+                return;
+            }
+        }
+        catch(NavigationException){ // Catch the first error, as it crashes the whole system
+            throw; // Then rethrow the error so Blazor still navigates to the next page
+        }
+    }
+
+    private async Task register(){
+
+        // Check if any field is empty or if the passwords don't match
+        if (string.IsNullOrWhiteSpace(username)||string.IsNullOrWhiteSpace(visibleName)||
+        string.IsNullOrWhiteSpace(password)||string.IsNullOrWhiteSpace(confirmPassword)){
+            loginResponse = LoginResponseModel.loginResponse.emptyFields;
+            responseString = LoginResponseModel.getMessageFromResponse(loginResponse);
+            return;
+        }
+        if (!string.Equals(password, confirmPassword)){
+            loginResponse = LoginResponseModel.loginResponse.notMatchingPasswords;
+            responseString = LoginResponseModel.getMessageFromResponse(loginResponse);
+            return;
+        }
+
+        username = username.ToLower();
+        if (!Regex.IsMatch(username, pattern: "^[a-z0-9]+$")) {
+            loginResponse = LoginResponseModel.loginResponse.wrongUsernameCharacters;
+            responseString = LoginResponseModel.getMessageFromResponse(loginResponse);
+            return;
+        }
+
+        // Generate all info about the user
+        SrpClient srpClient = new SrpClient();
+        string salt = srpClient.GenerateSalt();
+        string? privateKey = srpClient.DerivePrivateKey(salt, username, password);
+        if (privateKey == null) {
+            loginResponse = LoginResponseModel.loginResponse.privateKeyError;
+            responseString = LoginResponseModel.getMessageFromResponse(loginResponse);
+            return;
+        }
+        string verifier = srpClient.DeriveVerifier(privateKey);
+
+        // Send info about the user
+        User user = new User(username, visibleName, verifier, salt);
+
+        string jsonString = JsonSerializer.Serialize(new object[] {user, saveLogin});
+        
+        StringContent content = new StringContent(jsonString, Encoding.UTF8, mediaType: "application/json");
+
+        // Get the XSRF token
+        await apiClient.getCsrfToken();
+
+        HttpResponseMessage responseMessage = await apiClient.PostAsync(endpoint: "user/create", content);
+
+        // Check the response and either shows error code, or go to app
+        switch (responseMessage.StatusCode){
+            case System.Net.HttpStatusCode.Created: {
+
+                // Save data in local storage
+                if (saveLogin){
+                    localStorage.SetItemAsString("username", data:username);
+                    string? storedServer = sessionStorage.GetItem<string?>("server");
+                    if (string.IsNullOrEmpty(storedServer)) Navigation.NavigateTo("connect");
+                    else localStorage.SetItemAsString("server", storedServer);
+                }
+                
+                sessionStorage.SetItemAsString("username", data:username);
+                Navigation.NavigateTo("/app");
+                return;
+            }
+            case System.Net.HttpStatusCode.Conflict:
+            {
+                loginResponse = LoginResponseModel.loginResponse.alreadyExistingUser;
+                break;
+            }
+            default:{
+                loginResponse = LoginResponseModel.loginResponse.unknownError;
+                responseString = string.Concat(LoginResponseModel.getMessageFromResponse(loginResponse), ": "
+                    , responseMessage.ReasonPhrase);
+                break;
+            }
+        }
+        if (loginResponse != LoginResponseModel.loginResponse.unknownError) 
+        responseString = LoginResponseModel.getMessageFromResponse(loginResponse);
+    }
+}

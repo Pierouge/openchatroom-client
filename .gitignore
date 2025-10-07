@@ -15,3 +15,5 @@
 *.db-shm
 *.db-wal
 *.fake
+*.tmp
+*.tar
