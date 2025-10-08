@@ -14,11 +14,20 @@ Redirecting...
 
         // Connect check
         try{
-            if (await ConnectionService.checkLogin(sessionStorage, localStorage, apiClient))
-                Navigation.NavigateTo("app");
-            if(await ConnectionService.checkConnection(sessionStorage, localStorage, apiClient))
-                Navigation.NavigateTo("login");
-            else Navigation.NavigateTo("connect");
+            switch (await ConnectionService.checkLogin(sessionStorage, localStorage, apiClient)) {
+                case (ConnectionService.loginStates.credentials):{
+                    Navigation.NavigateTo(uri: "app");
+                    break;
+                }
+                case (ConnectionService.loginStates.server):{
+                    Navigation.NavigateTo(uri: "login");
+                    break;
+                }
+                default :{
+                    Navigation.NavigateTo("connect");
+                    break;
+                } 
+            }
         }
         catch(NavigationException){ // Catch the first error, as it crashes the whole system
             throw; // Then rethrow the error so Blazor still navigates to the next page

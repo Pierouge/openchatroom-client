@@ -4,42 +4,13 @@ using Microsoft.AspNetCore.Components;
 
 public static class ConnectionService
 {
-    public static async Task<bool> checkConnection(ISyncSessionStorageService sessionStorage,
-     ISyncLocalStorageService localStorage, ApiClient apiClient)
+    public enum loginStates
     {
-        try
-        {
-            // Check if the server is stored in session or local storage
-            string? storedServer = sessionStorage.GetItem<string?>("server");
-            if (string.IsNullOrEmpty(storedServer)) storedServer = localStorage.GetItem<string>("server");
-            if (string.IsNullOrEmpty(storedServer)) return false;
-            else
-            {
-                apiClient.setBaseAddress(storedServer); // Update the server
-                HttpResponseMessage httpResponse = await apiClient.GetAsync("check");
-
-                if (httpResponse.IsSuccessStatusCode) return true;
-                else return false;
-            }
-        }
-        catch (HttpRequestException)
-        {
-            return false;
-        }
-        catch (AggregateException aggrEx)
-        {
-            foreach (var innerEx in aggrEx.Flatten().InnerExceptions)
-            {
-                if (innerEx is HttpRequestException httpEx)
-                {
-                    return false;
-                }
-                else if (!(innerEx is NavigationException)) throw;
-            }
-        }
-        return false;
+        noServer,
+        server,
+        credentials
     }
-    public static async Task<bool> checkLogin(ISyncSessionStorageService sessionStorage,
+    public static async Task<loginStates> checkLogin(ISyncSessionStorageService sessionStorage,
      ISyncLocalStorageService localStorage, ApiClient apiClient)
     {
         try
@@ -49,21 +20,27 @@ public static class ConnectionService
             string? storedUsername = sessionStorage.GetItem<string?>("username");
             if (string.IsNullOrEmpty(storedServer)) storedServer = localStorage.GetItem<string>("server");
             if (string.IsNullOrEmpty(storedUsername)) storedUsername = localStorage.GetItem<string>("username");
-            if (string.IsNullOrEmpty(storedUsername)) return false;
-            if (string.IsNullOrEmpty(storedServer)) return false;
+            if (string.IsNullOrEmpty(storedServer)) return loginStates.noServer;
             else
             {
+                string endpoint = string.Empty;
+                if (string.IsNullOrEmpty(storedUsername)) endpoint = "check";
+                else endpoint = string.Concat("check", "/", storedUsername);
+
                 apiClient.setBaseAddress(storedServer); // Update the server
-                string endpoint = string.Concat("check", "/", storedUsername);
                 HttpResponseMessage httpResponse = await apiClient.GetAsync(endpoint);
 
-                if (httpResponse.IsSuccessStatusCode) return true;
-                else return false;
+                if (httpResponse.IsSuccessStatusCode)
+                {
+                    if (string.IsNullOrEmpty(storedUsername)) return loginStates.server;
+                    else return loginStates.credentials;
+                }
+                else return loginStates.noServer;
             }
         }
         catch (HttpRequestException)
         {
-            return false;
+            return loginStates.noServer;
         }
         catch (AggregateException aggrEx)
         {
@@ -71,11 +48,11 @@ public static class ConnectionService
             {
                 if (innerEx is HttpRequestException httpEx)
                 {
-                    return false;
+                    return loginStates.noServer;
                 }
                 else if (!(innerEx is NavigationException)) throw;
             }
         }
-        return false;
+        return loginStates.noServer;
     }
 }

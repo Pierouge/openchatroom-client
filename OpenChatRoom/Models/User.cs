@@ -9,21 +9,21 @@ public class User
 
     public User(string username, string visiblename, string verifier, string salt)
     {
-        this.Id = Guid.NewGuid().ToString("N");
-        this.Username = username;
-        this.VisibleName = visiblename;
-        this.Verifier = verifier;
-        this.Salt = salt;
-        this.IsAdmin = false;
+        Id = Guid.NewGuid().ToString("N");
+        Username = username;
+        VisibleName = visiblename;
+        Verifier = verifier;
+        Salt = salt;
+        IsAdmin = false;
     }
 
     public User(string id, string username, string visiblename, string verifier, string salt, bool isadmin)
     {
-        this.Id = id;
-        this.Username = username;
-        this.VisibleName = visiblename;
-        this.Verifier = verifier;
-        this.Salt = salt;
-        this.IsAdmin = isadmin;
+        Id = id;
+        Username = username;
+        VisibleName = visiblename;
+        Verifier = verifier;
+        Salt = salt;
+        IsAdmin = isadmin;
     }
 }

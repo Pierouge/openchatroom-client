@@ -22,6 +22,7 @@
         <label for="password" class="field-label">Password</label>
         <input id="password" class="center" type="password" name="password" @bind="password">
         <a href="/register">Register</a>
+        <a href="/connect">Change Server</a>
         <div class="checkbox-label-container">
             <label for="save-login">Remember Login</label>
             <input id="save-login" type="checkbox" name="save-login" @bind="saveLogin">
@@ -40,13 +41,15 @@
     {
         base.OnInitialized();
         try{
-            if(!await ConnectionService.checkConnection(sessionStorage, localStorage, apiClient)){
-                Navigation.NavigateTo(uri: "connect");
-                return;
-            }
-            else if (await ConnectionService.checkLogin(sessionStorage, localStorage, apiClient)){
-                Navigation.NavigateTo(uri: "app");
-                return;
+            switch (await ConnectionService.checkLogin(sessionStorage, localStorage, apiClient)) {
+                case (ConnectionService.loginStates.credentials):{
+                    Navigation.NavigateTo(uri: "app");
+                    break;
+                }
+                case (ConnectionService.loginStates.noServer):{
+                    Navigation.NavigateTo(uri: "connect");
+                    break;
+                } 
             }
         }
         catch(NavigationException){ // Catch the first error, as it crashes the whole system
