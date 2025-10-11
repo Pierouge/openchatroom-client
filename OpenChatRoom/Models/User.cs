@@ -1,6 +1,6 @@
 public class User
 {
-    public string Id { get; }
+    public string? Id { get; }
     public string Username { get; }
     public string VisibleName { get; }
     public string Verifier { get; }
@@ -9,7 +9,6 @@ public class User
 
     public User(string username, string visiblename, string verifier, string salt)
     {
-        Id = Guid.NewGuid().ToString("N");
         Username = username;
         VisibleName = visiblename;
         Verifier = verifier;

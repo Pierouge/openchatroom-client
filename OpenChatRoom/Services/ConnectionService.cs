@@ -33,9 +33,14 @@ public static class ConnectionService
                 if (httpResponse.IsSuccessStatusCode)
                 {
                     if (string.IsNullOrEmpty(storedUsername)) return loginStates.server;
-                    else return loginStates.credentials;
+                    return loginStates.credentials;
                 }
-                else return loginStates.noServer;
+                
+                if (httpResponse.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
+                    httpResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    return loginStates.server;
+
+                return loginStates.noServer;
             }
         }
         catch (HttpRequestException)
