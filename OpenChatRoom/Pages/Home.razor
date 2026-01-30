@@ -4,17 +4,15 @@
 @inject ApiClient apiClient
 @inject Blazored.SessionStorage.ISyncSessionStorageService sessionStorage
 @inject Blazored.LocalStorage.ISyncLocalStorageService localStorage
+@inject UserManager userManager
 
 Redirecting...
 
 @code{
     protected async override Task OnInitializedAsync(){
-
-        // TODO: login check
-
         // Connect check
         try{
-            switch (await ConnectionService.checkLogin(sessionStorage, localStorage, apiClient)) {
+            switch (await ConnectionService.checkLogin(sessionStorage, localStorage, apiClient, userManager)) {
                 case (ConnectionService.loginStates.credentials):{
                     Navigation.NavigateTo(uri: "app");
                     break;

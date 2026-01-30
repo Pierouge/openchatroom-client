@@ -5,6 +5,8 @@
 **/.idea/
 **/.build/
 **/.site/
+**/.nvim/
+**/roslyn-source-generated:/
 
 *.user
 *.suo
@@ -17,3 +19,6 @@
 *.fake
 *.tmp
 *.tar
+*.key
+*.crt
+*.pfx

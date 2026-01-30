@@ -1,17 +1,31 @@
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+# ---------- Build stage ----------
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build-env
 WORKDIR /app
 
-COPY OpenChatRoom.sln ./
-COPY ./OpenChatRoom/OpenChatRoom.csproj ./OpenChatRoom/
+# Copy only the project files – enables layer caching for restores
+COPY OpenChatRoom/*.csproj ./OpenChatRoom/
+RUN dotnet restore ./OpenChatRoom/OpenChatRoom.csproj
 
-RUN dotnet restore
+# Copy the rest of the source code
 COPY . ./
-RUN dotnet publish -c Release -o out
 
-FROM nginx:stable-alpine
-WORKDIR /app
-EXPOSE 8080
-ARG Environment=Production
-COPY nginx.conf /etc/nginx/nginx.conf
-RUN sed -i "s/replace_this_string/${Environment}/" /etc/nginx/nginx.conf
-COPY --from=build /app/out/wwwroot /usr/share/nginx/html
+# Publish the Blazor WebAssembly app
+RUN dotnet publish ./OpenChatRoom/OpenChatRoom.csproj \
+    -c Release \
+    -o /app/publish   # final output folder
+
+# ---------- Runtime stage ----------
+FROM nginx:alpine
+WORKDIR /var/www/web
+
+# Serve the static files produced by the publish step
+COPY --from=build-env /app/publish/wwwroot ./
+
+# Optional custom Nginx configuration -> In compose instead so user can customize it
+# COPY nginx.conf /etc/nginx/nginx.conf
+
+# Copy SSL Certs for HTTPS -> Do that in compose instead
+# COPY certs/localhost.crt /etc/nginx/certs/localhost.crt
+# COPY certs/localhost.key /etc/nginx/certs/localhost.key
+
+EXPOSE 80 443
