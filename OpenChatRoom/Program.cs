@@ -14,6 +14,9 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddBlazoredLocalStorageAsSingleton();
 builder.Services.AddBlazoredSessionStorageAsSingleton();
 
+// Add the ApiClient as a Singleton
+builder.Services.AddSingleton<ApiClient>();
+
 // Add singletons for the App init services
 builder.Services.AddSingleton<AppInitializationService>();
 builder.Services.AddSingleton<LoginScreenRedirector>();
