@@ -17,8 +17,10 @@ builder.Services.AddBlazoredSessionStorageAsSingleton();
 // Add the ApiClient as a Singleton
 builder.Services.AddSingleton<ApiClient>();
 
-// Add singletons for the App init services
-builder.Services.AddSingleton<AppInitializationService>();
-builder.Services.AddSingleton<LoginScreenRedirector>();
+// Add the LoginInfoManager as a Singleton
+builder.Services.AddSingleton<LoginInfoManager>();
+
+// Add Handlers as Singletons
+builder.Services.AddSingleton<CheckRequestHandler>();
 
 await builder.Build().RunAsync();

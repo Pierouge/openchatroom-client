@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 
 public class ApiClient
@@ -18,13 +19,16 @@ public class ApiClient
     };
   }
 
-  public async Task<ApiResult> SendRequestAsync(string endpoint, HttpMethod method, HttpContent content)
+  public async Task<ApiResult> SendRequestAsync(string endpoint, HttpMethod method, HttpContent? content = null, string? jwt = null)
   {
     if (http == null) throw new NullReferenceException(message: "Attempting to send a request to an unknown server");
     HttpRequestMessage request = new(method, endpoint)
     {
       Content = content
     };
+
+    if (!string.IsNullOrWhiteSpace(jwt))
+      request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
 
     // Ensure works or gives the exception as a result
     try
