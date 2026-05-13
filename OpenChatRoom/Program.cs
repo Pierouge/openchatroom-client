@@ -10,12 +10,6 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
-// Add a apiClient for the api Requests
-builder.Services.AddScoped<ApiClient>();
-
-// Add a UserManager to the scope to keep User Info
-builder.Services.AddScoped<UserManager>();
-
 // Add Local and Session Storage Components
 builder.Services.AddBlazoredLocalStorageAsSingleton();
 builder.Services.AddBlazoredSessionStorageAsSingleton();
