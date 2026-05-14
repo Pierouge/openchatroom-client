@@ -22,5 +22,6 @@ builder.Services.AddSingleton<LoginInfoManager>();
 
 // Add Handlers as Singletons
 builder.Services.AddSingleton<CheckRequestHandler>();
+builder.Services.AddSingleton<LoginRequestHandler>();
 
 await builder.Build().RunAsync();

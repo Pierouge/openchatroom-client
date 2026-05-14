@@ -8,7 +8,7 @@ public class LoginInfoManager(NavigationManager nav, ISyncLocalStorageService st
 
   public void SetJWTToStorage(string jwt)
   {
-    localStorage.SetItem("token", jwt);
+    localStorage.SetItemAsString("token", jwt);
   }
 
   public string? GetJWTFromStorage()
@@ -18,7 +18,7 @@ public class LoginInfoManager(NavigationManager nav, ISyncLocalStorageService st
 
   public void SetServerToStorage(string server)
   {
-    localStorage.SetItem("server", server);
+    localStorage.SetItemAsString("server", server);
   }
 
   public string? GetServerFromStorage()

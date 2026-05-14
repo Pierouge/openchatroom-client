@@ -34,7 +34,6 @@
       infoManager.SetServerToStorage(apiClient.getBaseAddressString());
       navigationManager.NavigateTo("login");
     }
-    else if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
-      responseMessage = result.ErrorMessage;
+    responseMessage = result.ErrorMessage!;
   }
 }

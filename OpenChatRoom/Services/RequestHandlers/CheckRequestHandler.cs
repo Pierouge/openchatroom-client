@@ -10,7 +10,7 @@ public class CheckRequestHandler(ApiClient api, LoginInfoManager info)
     if (!result.IsSuccess) return RequestResult.Failure(result.Exception!.Message, result);
 
     if (result.Response!.IsSuccessStatusCode) return RequestResult.Success(result);
-    return RequestResult.Failure(result.Response!.Content.ToString(), result);
+    return RequestResult.Failure(result.Response!.Content.ToString()!, result);
   }
 
   public async Task<RequestResult> CheckAuth()
@@ -23,6 +23,6 @@ public class CheckRequestHandler(ApiClient api, LoginInfoManager info)
     if (!result.IsSuccess) return RequestResult.Failure(result.Exception!.Message, result);
 
     if (result.Response!.IsSuccessStatusCode) return RequestResult.Success(result);
-    return RequestResult.Failure(result.Response!.Content.ToString(), result);
+    return RequestResult.Failure(result.Response!.Content.ToString()!, result);
   }
 }

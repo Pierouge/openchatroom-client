@@ -1,0 +1,58 @@
+@page "/register"
+@layout EmptyLayout
+@inject NavigationManager nav
+@inject LoginRequestHandler loginHandler
+<div class="card login-card">
+  <h1 class="center-text">Register Account Information</h1>
+  <form class="center center-text" @onsubmit="register">
+    @if (!string.IsNullOrWhiteSpace(responseString))
+    {
+      <p class="text-danger">@responseString</p>
+    }
+    <label for="username" class="field-label">Username</label>
+    <input id="username" class="center" type="text" name="username" @bind="username">
+    <label for="visiblename" class="field-label">Visible Name</label>
+    <input id="visiblename" class="center" type="text" name="visiblename" @bind="visibleName">
+    <label for="password" class="field-label">Password</label>
+    <input id="password" class="center" type="password" name="password" @bind="password">
+    <label for="confirm-password" class="field-label">Confirm Password</label>
+    <input id="confirm-password" class="center" type="password" name="confirm-password" @bind="confirmPassword">
+    <a href="/login">Login</a>
+    <a href="/connect">Change Server</a>
+  </form>
+  <button class="center btn btn-primary" type="button" @onclick="register">Register</button>
+</div>
+
+@code {
+  private string username = string.Empty;
+  private string visibleName = string.Empty;
+  private string password = string.Empty;
+  private string confirmPassword = string.Empty;
+  private string responseString = string.Empty;
+
+  private async Task register()
+  {
+    if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(visibleName)
+|| string.IsNullOrWhiteSpace(confirmPassword))
+    {
+      responseString = "Error: All four fields should contain data";
+      return;
+    }
+
+    if (!string.Equals(password, confirmPassword))
+    {
+      responseString = "Error: The two passwords should match";
+      return;
+    }
+
+    RequestResult result = await loginHandler.Register(username, visibleName, password);
+
+    if (!result.IsSuccess)
+    {
+      responseString = result.ErrorMessage!;
+      return;
+    }
+
+    nav.NavigateTo("");
+  }
+}
