@@ -16,7 +16,7 @@ public class CheckRequestHandler(ApiClient api, LoginInfoManager info)
   public async Task<RequestResult> CheckAuth()
   {
     string? jwt = infoManager.GetJWTFromStorage();
-    ApiResult result = await apiClient.SendRequestAsync("check", HttpMethod.Get, jwt: jwt);
+    ApiResult result = await apiClient.SendRequestAsync("check/auth", HttpMethod.Get, jwt: jwt);
 
     infoManager.RedirectFromApiResult(result);
 

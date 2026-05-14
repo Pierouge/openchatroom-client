@@ -3,6 +3,7 @@
 @inject ApiClient apiClient
 @inject CheckRequestHandler checkRequestHandler
 @inject NavigationManager navigationManager
+@inject LoginInfoManager infoManager
 
 <div class="card login-card">
   <h1 class="center-text">Server Information</h1>
@@ -29,7 +30,10 @@
     RequestResult result = await checkRequestHandler.Check();
 
     if (result.IsSuccess)
+    {
+      infoManager.SetServerToStorage(apiClient.getBaseAddressString());
       navigationManager.NavigateTo("login");
+    }
     else if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
       responseMessage = result.ErrorMessage;
   }
