@@ -1,5 +1,5 @@
 # ---------- Build stage ----------
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build-env
 WORKDIR /app
 
 # Copy only the project files – enables layer caching for restores

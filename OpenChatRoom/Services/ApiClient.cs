@@ -13,7 +13,7 @@ public class ApiClient
 
   public bool setBaseAddress(string baseUrl)
   {
-    if (Uri.TryCreate(baseUrl, UriKind.Absolute, out Uri? uri))
+    if (Uri.TryCreate(filterAddress(baseUrl), UriKind.Absolute, out Uri? uri))
     {
       http = new HttpClient { BaseAddress = uri };
       return true;
