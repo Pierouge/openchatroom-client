@@ -11,12 +11,15 @@ public class ApiClient
     return http.BaseAddress?.ToString() ?? string.Empty;
   }
 
-  public void setBaseAddress(string baseUrl)
+  public bool setBaseAddress(string baseUrl)
   {
-    http = new HttpClient
+    if (Uri.TryCreate(baseUrl, UriKind.Absolute, out Uri? uri))
     {
-      BaseAddress = new Uri(filterAddress(baseUrl))
-    };
+      http = new HttpClient { BaseAddress = uri };
+      return true;
+    }
+
+    return false;
   }
 
   public async Task<ApiResult> SendRequestAsync(string endpoint, HttpMethod method, HttpContent? content = null, string? jwt = null)

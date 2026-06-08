@@ -10,7 +10,11 @@ public abstract class StartupLoginChecker
       navigationManager.NavigateTo("connect");
       return;
     }
-    apiClient.setBaseAddress(server);
-    await check.CheckAuth();
+    if (apiClient.setBaseAddress(server))
+    {
+      await check.CheckAuth();
+    }
+    else
+      navigationManager.NavigateTo("connect");
   }
 }

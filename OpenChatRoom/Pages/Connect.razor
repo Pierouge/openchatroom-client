@@ -15,18 +15,32 @@
     <label for="server" class="field-label">Server</label>
     <input id="server" class="center" type="text" name="server" @bind=server>
   </form>
-  <button class="center btn btn-primary" type="button" @onclick="connect">Connect</button>
+  <button class="@(isConnecting ? "center btn btn-primary disabled" : "center btn btn-primary")" type="button"
+          @onclick="connect">Connect</button>
 </div>
 
 @code {
   private string server = string.Empty;
   private string responseMessage = string.Empty;
+  private bool isConnecting = false;
 
   private async Task connect()
   {
+    isConnecting = true;
     responseMessage = string.Empty;
 
-    apiClient.setBaseAddress(server);
+    if (string.IsNullOrWhiteSpace(server))
+    {
+      responseMessage = "Error: Server field cannot be empty";
+      return;
+    }
+
+    if (!apiClient.setBaseAddress(server))
+    {
+      responseMessage = "Error: Failed to parse server address";
+      return;
+    }
+
     RequestResult result = await checkRequestHandler.Check();
 
     if (result.IsSuccess)
@@ -35,5 +49,6 @@
       navigationManager.NavigateTo("login");
     }
     responseMessage = result.ErrorMessage!;
+    isConnecting = false;
   }
 }

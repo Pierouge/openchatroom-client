@@ -24,10 +24,9 @@ public class LoginRequestHandler(ApiClient apiClient, LoginInfoManager infoManag
 
     ApiResult resultPhase1 = await api.SendRequestAsync("user/srp/1", HttpMethod.Post, contentPhase1);
 
-    if (!resultPhase1.IsSuccess) return RequestResult.Failure(resultPhase1.Exception!.Message, resultPhase1);
-
-    if (!resultPhase1.Response!.IsSuccessStatusCode)
-      return RequestResult.Failure(await resultPhase1.Response!.Content.ReadAsStringAsync(), resultPhase1);
+    RequestResult requestResultPhase1 = RequestResult.FromApiResult(resultPhase1);
+    if (!requestResultPhase1.IsSuccess)
+      return requestResultPhase1;
 
     // Phase 3
     string contentPhase2string = await resultPhase1.Response!.Content.ReadAsStringAsync();
@@ -55,10 +54,9 @@ public class LoginRequestHandler(ApiClient apiClient, LoginInfoManager infoManag
 
     ApiResult resultPhase3 = await api.SendRequestAsync("user/srp/2", HttpMethod.Post, contentPhase3, jwt: token);
 
-    if (!resultPhase3.IsSuccess) return RequestResult.Failure(resultPhase3.Exception!.Message, resultPhase3);
-
-    if (!resultPhase3.Response!.IsSuccessStatusCode)
-      return RequestResult.Failure(await resultPhase3.Response!.Content.ReadAsStringAsync(), resultPhase3);
+    RequestResult requestResultPhase3 = RequestResult.FromApiResult(resultPhase3);
+    if (!requestResultPhase3.IsSuccess)
+      return requestResultPhase3;
 
     // Phase 5
     string contentPhase4string = await resultPhase3.Response!.Content.ReadAsStringAsync();

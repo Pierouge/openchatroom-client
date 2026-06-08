@@ -17,13 +17,15 @@
     <a href="/register">Register</a>
     <a href="/connect">Change Server</a>
   </form>
-  <button class="center btn btn-primary" type="button" @onclick="login">Login</button>
+  <button class="@(isLogging ? "center btn btn-primary disabled" : "center btn btn-primary")" type="button"
+          @onclick="login">Login</button>
 </div>
 
 @code {
   private string username = string.Empty;
   private string password = string.Empty;
   private string responseString = string.Empty;
+  private bool isLogging = false;
 
   private async Task login()
   {
@@ -33,11 +35,14 @@
       return;
     }
 
+    isLogging = true;
+
     RequestResult result = await loginHandler.Login(username, password);
 
     if (!result.IsSuccess)
     {
       responseString = result.ErrorMessage!;
+      isLogging = false;
       return;
     }
 

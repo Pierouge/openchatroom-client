@@ -1,9 +1,7 @@
 using Blazored.LocalStorage;
-using Microsoft.AspNetCore.Components;
 
-public class LoginInfoManager(NavigationManager nav, ISyncLocalStorageService storageService)
+public class LoginInfoManager(ISyncLocalStorageService storageService)
 {
-  private readonly NavigationManager navigationManager = nav;
   private readonly ISyncLocalStorageService localStorage = storageService;
 
   public void SetJWTToStorage(string jwt)
@@ -26,18 +24,5 @@ public class LoginInfoManager(NavigationManager nav, ISyncLocalStorageService st
     return localStorage.GetItemAsString("server");
   }
 
-  public bool RedirectFromApiResult(ApiResult result)
-  {
-    if (!result.IsSuccess)
-    {
-      navigationManager.NavigateTo("connect");
-      return true;
-    }
-    else if (result.Response!.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-    {
-      navigationManager.NavigateTo("login");
-      return true;
-    }
-    return false;
-  }
+
 }

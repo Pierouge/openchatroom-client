@@ -16,6 +16,14 @@ public class RequestResult
 
   public static RequestResult Failure(string error, ApiResult? apiResult)
       => new(false, error, apiResult);
+
+  public static RequestResult FromApiResult(ApiResult result)
+  {
+    if (!result.IsSuccess) return Failure(result.Exception!.Message, result);
+
+    if (result.Response!.IsSuccessStatusCode) return Success(result);
+    return Failure(result.Response!.Content.ToString()!, result);
+  }
 }
 
 
@@ -34,5 +42,12 @@ public class RequestResult<T> : RequestResult
 
   public static new RequestResult<T> Failure(string error, ApiResult? apiResult)
       => new(false, default, error, apiResult);
+
+  public static RequestResult<T> FromFailedRequestResult(RequestResult requestResult)
+  {
+    if (requestResult.IsSuccess)
+      throw new ArgumentException("Given RequestResult is Successful");
+    return Failure(requestResult.ErrorMessage!, requestResult.ApiResult);
+  }
 }
 

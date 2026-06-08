@@ -20,7 +20,8 @@
     <a href="/login">Login</a>
     <a href="/connect">Change Server</a>
   </form>
-  <button class="center btn btn-primary" type="button" @onclick="register">Register</button>
+  <button class="@(isRegistering ? "center btn btn-primary disabled" : "center btn btn-primary")" type="button"
+          @onclick="register">Register</button>
 </div>
 
 @code {
@@ -29,6 +30,7 @@
   private string password = string.Empty;
   private string confirmPassword = string.Empty;
   private string responseString = string.Empty;
+  private bool isRegistering = false;
 
   private async Task register()
   {
@@ -45,11 +47,14 @@
       return;
     }
 
+    isRegistering = true;
+
     RequestResult result = await loginHandler.Register(username, visibleName, password);
 
     if (!result.IsSuccess)
     {
       responseString = result.ErrorMessage!;
+      isRegistering = false;
       return;
     }
 
