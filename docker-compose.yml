@@ -1,13 +1,18 @@
 services:
-  blazorstandalone:
-    image: blazorstandalone
+  client:
+    image: openchatroom-client
     build:
       context: .
       dockerfile: Dockerfile
+      no_cache: true
     ports:
       - 8080:80
       - 8443:443
-    # Volumes are only used for the certificates, so the user can always update it
+    environment:
+      API_URL: ${API_URL}
     volumes:
       - ./certs:/etc/nginx/certs:ro
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./OpenChatRoom/wwwroot/appsettings.json:/var/www/web/appsettings.json.template:ro
+    command: /bin/sh -c "envsubst < /var/www/web/appsettings.json.template > /var/www/web/appsettings.json && nginx -g 'daemon off;'"
+

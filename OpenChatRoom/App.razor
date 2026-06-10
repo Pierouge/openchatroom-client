@@ -2,6 +2,7 @@
 @inject CheckRequestHandler check
 @inject ApiClient api
 @inject NavigationManager nav
+@inject AppConfig config
 <Router AppAssembly="@typeof(App).Assembly">
   <Found Context="routeData">
     <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
@@ -18,6 +19,6 @@
 @code {
   protected override async Task OnInitializedAsync()
   {
-    await StartupLoginChecker.CheckLoginAsync(check, login, api, nav);
+    await StartupLoginChecker.CheckLoginAsync(check, login, api, nav, config);
   }
 }
