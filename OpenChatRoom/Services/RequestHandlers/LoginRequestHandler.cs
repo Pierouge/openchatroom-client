@@ -1,6 +1,5 @@
 using System.Net.Http.Json;
 using System.Security;
-using System.Text.Json;
 using SecureRemotePassword;
 
 public class LoginRequestHandler(ApiClient apiClient, LoginInfoManager infoManager)
@@ -14,13 +13,8 @@ public class LoginRequestHandler(ApiClient apiClient, LoginInfoManager infoManag
     SrpClient srpClient = new();
     SrpEphemeral clientEphemeral = srpClient.GenerateEphemeral();
 
-    // Phase 1
-    Dictionary<string, string> phase1Dict = new(){
-      {"username", username},
-      {"client_public_ephemeral", clientEphemeral.Public}
-    };
-
-    HttpContent contentPhase1 = JsonContent.Create(phase1Dict);
+    HttpContent contentPhase1 = JsonContent.Create(
+        new UserControllerRecords.SrpStep1Request(username, clientEphemeral.Public));
 
     ApiResult resultPhase1 = await api.SendRequestAsync("user/srp/1", HttpMethod.Post, contentPhase1);
 
@@ -29,59 +23,40 @@ public class LoginRequestHandler(ApiClient apiClient, LoginInfoManager infoManag
       return requestResultPhase1;
 
     // Phase 3
-    string contentPhase2string = await resultPhase1.Response!.Content.ReadAsStringAsync();
-    Dictionary<string, string>? phase2Dict = JsonSerializer.Deserialize<Dictionary<string, string>>(contentPhase2string);
+    UserControllerRecords.SrpStep2Response? phase2Content = await resultPhase1.Response!.Content.ReadFromJsonAsync<UserControllerRecords.SrpStep2Response>();
 
-    if (phase2Dict == null)
+    if (phase2Content == null)
       return RequestResult.Failure("Error: Server replied without a content", resultPhase1);
 
-    string serverPublicEphemeral = phase2Dict["server_public_ephemeral"];
-    string salt = phase2Dict["salt"];
-    string token = phase2Dict["token"];
+    string privateKey = srpClient.DerivePrivateKey(phase2Content.Salt, username, password);
+    SrpSession clientSession = srpClient.DeriveSession(clientEphemeral.Secret,
+        phase2Content.ServerPublicEphemeral, phase2Content.Salt, username, privateKey);
 
-    Console.WriteLine(string.Concat("Token: ", token));
+    HttpContent contentPhase3 = new StringContent(clientSession.Proof);
 
-    if (string.IsNullOrWhiteSpace(serverPublicEphemeral) || string.IsNullOrWhiteSpace(salt) || string.IsNullOrWhiteSpace(token))
-      return RequestResult.Failure("Error: Server replied with incomplete content", resultPhase1);
-
-    string privateKey = srpClient.DerivePrivateKey(salt, username, password);
-    SrpSession clientSession = srpClient.DeriveSession(clientEphemeral.Secret, serverPublicEphemeral, salt, username, privateKey);
-
-    Dictionary<string, string> phase3Dict = new(){
-      {"proof", clientSession.Proof}
-    };
-    HttpContent contentPhase3 = JsonContent.Create(phase3Dict);
-
-    ApiResult resultPhase3 = await api.SendRequestAsync("user/srp/2", HttpMethod.Post, contentPhase3, jwt: token);
+    ApiResult resultPhase3 = await api.SendRequestAsync("user/srp/2", HttpMethod.Post, contentPhase3, jwt: phase2Content.Token);
 
     RequestResult requestResultPhase3 = RequestResult.FromApiResult(resultPhase3);
     if (!requestResultPhase3.IsSuccess)
       return requestResultPhase3;
 
     // Phase 5
-    string contentPhase4string = await resultPhase3.Response!.Content.ReadAsStringAsync();
-    Dictionary<string, string>? phase4Dict = JsonSerializer.Deserialize<Dictionary<string, string>>(contentPhase4string);
+    UserControllerRecords.SrpStep4Response? phase4Content = await resultPhase3.Response!.Content.ReadFromJsonAsync<UserControllerRecords.SrpStep4Response>();
 
-    if (phase4Dict == null)
+    if (phase4Content == null)
       return RequestResult.Failure("Error: Server replied without a content", resultPhase3);
-
-    string serverProof = phase4Dict["proof"];
-    token = phase4Dict["token"];
-
-    if (string.IsNullOrWhiteSpace(serverProof) || string.IsNullOrWhiteSpace(token))
-      return RequestResult.Failure("Error: Server replied with incomplete content", resultPhase3);
 
     try
     {
-      srpClient.VerifySession(clientEphemeral.Public, clientSession, serverProof);
+      srpClient.VerifySession(clientEphemeral.Public, clientSession, phase4Content.Proof);
     }
     catch (SecurityException)
     {
       return RequestResult.Failure("Error: failed to verify the server session.", null);
     }
 
-    info.SetJWTToStorage(token);
-    return RequestResult.Success(null);
+    info.SetJWTToStorage(phase4Content.TokenPair);
+    return RequestResult.Success(resultPhase3);
   }
 
   public async Task<RequestResult> Register(string username, string visibleName, string password)
@@ -93,36 +68,25 @@ public class LoginRequestHandler(ApiClient apiClient, LoginInfoManager infoManag
     string privateKey = srpClient.DerivePrivateKey(salt, formattedUsername, password);
     string verifier = srpClient.DeriveVerifier(privateKey);
 
-    Dictionary<string, string> contentDict = new(){
-      {"username", formattedUsername},
-      {"visibleName", visibleName},
-      {"salt", salt},
-      {"verifier", verifier}
-    };
+    UserControllerRecords.CreateUserRequest contentRecord = new(formattedUsername,
+        visibleName, salt, verifier);
 
-    HttpContent content = JsonContent.Create(contentDict);
+    HttpContent content = JsonContent.Create(contentRecord);
 
     ApiResult result = await api.SendRequestAsync("user/create", HttpMethod.Post, content);
 
+    RequestResult requestResult = RequestResult.FromApiResult(result);
+
     if (!result.IsSuccess)
-      return RequestResult.Failure(result.Exception!.Message, result);
+      return requestResult;
 
-    string responseString = await result.Response!.Content.ReadAsStringAsync();
-
-    if (!result.Response!.IsSuccessStatusCode)
-      return RequestResult.Failure(responseString, result);
-
-    Dictionary<string, object>? response = JsonSerializer.Deserialize<Dictionary<string, object>>(responseString);
+    UserControllerRecords.CreateResult? response = await result.Response!.Content.ReadFromJsonAsync<UserControllerRecords.CreateResult>();
     if (response == null)
       return RequestResult.Failure("Error: failed to serialize the response content", null);
 
     // NOTE: Additional user info can be saved from the response for runtime storage
 
-    string? token = response["token"].ToString();
-    if (string.IsNullOrWhiteSpace(token))
-      return RequestResult.Failure("Error: failed to fetch the JWT", null);
-
-    info.SetJWTToStorage(token);
-    return RequestResult.Success(null);
+    info.SetJWTToStorage(response.TokenPair);
+    return RequestResult.Success(result);
   }
 }

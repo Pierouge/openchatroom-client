@@ -1,25 +1,26 @@
+using System.Net.Http.Json;
+
 public abstract class AuthorizationRequestHandlerBase(ApiClient api, LoginInfoManager manager)
 {
-  protected ApiClient apiClient { get; } = api;
+  protected ApiClient ApiClient { get; } = api;
 
   private readonly LoginInfoManager infoManager = manager;
 
   protected async Task<RequestResult> TryRequestWithJWTAsync(string endpoint, HttpMethod method, HttpContent? content = null)
   {
-    string? jwt = infoManager.GetJWTFromStorage();
-    ApiResult result = await apiClient.SendRequestAsync(endpoint, method, jwt: jwt, content: content);
+    TokenPair? jwtPair = infoManager.GetJWTFromStorage();
 
-    if (result.IsSuccess && result.Response!.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-    {
-      // jwt = infoManager.GetRefreshJWTFromStorage();
-      return await UpdateJWTThenRetryAsync(endpoint, method, jwt, content);
-    }
+    ApiResult result = await ApiClient.SendRequestAsync(endpoint, method, jwt: jwtPair?.Token, content: content);
+
+    if (result.IsSuccess && result.Response!.StatusCode == System.Net.HttpStatusCode.Unauthorized && jwtPair != null)
+      return await UpdateJWTThenRetryAsync(endpoint, method, jwtPair.RefreshToken, content);
+
     return RequestResult.FromApiResult(result);
   }
 
-  private async Task<RequestResult> UpdateJWTThenRetryAsync(string endpoint, HttpMethod method, string? refreshJwt, HttpContent? content = null)
+  private async Task<RequestResult> UpdateJWTThenRetryAsync(string endpoint, HttpMethod method, string refreshJwt, HttpContent? content = null)
   {
-    ApiResult result = await apiClient.SendRequestAsync("check/refresh", HttpMethod.Get, jwt: refreshJwt);
+    ApiResult result = await ApiClient.SendRequestAsync("check/refresh", HttpMethod.Get, jwt: refreshJwt);
     RequestResult requestResult = RequestResult.FromApiResult(result);
 
     if (!requestResult.IsSuccess)
@@ -27,15 +28,15 @@ public abstract class AuthorizationRequestHandlerBase(ApiClient api, LoginInfoMa
       return requestResult;
     }
 
-    string newJwt = await result.Response!.Content.ReadAsStringAsync();
-    if (newJwt.IsWhiteSpace())
+    TokenPair? newJWTPair = await result.Response!.Content.ReadFromJsonAsync<TokenPair>();
+    if (newJWTPair == null)
     {
       return RequestResult.Failure("Server Failed to output JWT during update", null);
     }
 
-    infoManager.SetJWTToStorage(newJwt);
+    infoManager.SetJWTToStorage(newJWTPair);
 
-    ApiResult finalResult = await apiClient.SendRequestAsync(endpoint, method, content, newJwt);
+    ApiResult finalResult = await ApiClient.SendRequestAsync(endpoint, method, content, newJWTPair.Token);
     return RequestResult.FromApiResult(finalResult);
   }
 

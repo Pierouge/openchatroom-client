@@ -6,24 +6,21 @@ public class LoginInfoManager(ISyncLocalStorageService storageService, Navigatio
   private readonly ISyncLocalStorageService localStorage = storageService;
   private readonly NavigationManager navigationManager = nav;
 
-  public void SetJWTToStorage(string jwt)
+  public void SetJWTToStorage(TokenPair jwtPair)
   {
-    localStorage.SetItemAsString("token", jwt);
+    localStorage.SetItemAsString("token", jwtPair.Token);
+    localStorage.SetItemAsString("refreshToken", jwtPair.RefreshToken);
   }
 
-  public string? GetJWTFromStorage()
+  public TokenPair? GetJWTFromStorage()
   {
-    return localStorage.GetItemAsString("token");
-  }
+    string? jwt = localStorage.GetItemAsString("token");
+    string? refreshJwt = localStorage.GetItemAsString("refreshToken");
 
-  public void SetRefreshJWTToStorage(string jwt)
-  {
-    localStorage.SetItemAsString("refresh_token", jwt);
-  }
+    if (string.IsNullOrWhiteSpace(jwt) || string.IsNullOrWhiteSpace(refreshJwt))
+      return null;
 
-  public string? GetRefreshJWTFromStorage()
-  {
-    return localStorage.GetItemAsString("refresh_token");
+    return new TokenPair(jwt, refreshJwt);
   }
 
   public void SetServerToStorage(string server)
