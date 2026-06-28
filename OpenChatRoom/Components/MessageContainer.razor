@@ -1,0 +1,9 @@
+<div class="hover-region">
+  <h3>@Author.VisibleName (@Author.Username)</h3>
+  <p>@Message.Text</p>
+</div>
+
+@code{
+  [Parameter] public User Author {get; set;} = default!;
+  [Parameter] public Message Message {get; set;} = default!;
+}

@@ -17,12 +17,12 @@ public class RequestResult
   public static RequestResult Failure(string error, ApiResult? apiResult)
       => new(false, error, apiResult);
 
-  public static RequestResult FromApiResult(ApiResult result)
+  public async static Task<RequestResult> FromApiResult(ApiResult result)
   {
     if (!result.IsSuccess) return Failure(result.Exception!.Message, result);
 
     if (result.Response!.IsSuccessStatusCode) return Success(result);
-    return Failure(result.Response!.Content.ToString()!, result);
+    return Failure(await result.Response!.Content.ReadAsStringAsync()!, result);
   }
 }
 

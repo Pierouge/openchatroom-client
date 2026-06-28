@@ -3,7 +3,7 @@ public class CheckRequestHandler(ApiClient api, LoginInfoManager manager) : Auth
   public async Task<RequestResult> Check()
   {
     ApiResult result = await ApiClient.SendRequestAsync("check", HttpMethod.Get);
-    return RequestResult.FromApiResult(result);
+    return await RequestResult.FromApiResult(result);
   }
 
   public async Task<RequestResult> CheckAuth()

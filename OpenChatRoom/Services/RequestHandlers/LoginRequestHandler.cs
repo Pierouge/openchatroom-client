@@ -1,5 +1,7 @@
 using System.Net.Http.Json;
 using System.Security;
+using System.Text;
+using System.Text.Json;
 using SecureRemotePassword;
 
 public class LoginRequestHandler(ApiClient apiClient, LoginInfoManager infoManager)
@@ -18,7 +20,7 @@ public class LoginRequestHandler(ApiClient apiClient, LoginInfoManager infoManag
 
     ApiResult resultPhase1 = await api.SendRequestAsync("user/srp/1", HttpMethod.Post, contentPhase1);
 
-    RequestResult requestResultPhase1 = RequestResult.FromApiResult(resultPhase1);
+    RequestResult requestResultPhase1 = await RequestResult.FromApiResult(resultPhase1);
     if (!requestResultPhase1.IsSuccess)
       return requestResultPhase1;
 
@@ -32,11 +34,15 @@ public class LoginRequestHandler(ApiClient apiClient, LoginInfoManager infoManag
     SrpSession clientSession = srpClient.DeriveSession(clientEphemeral.Secret,
         phase2Content.ServerPublicEphemeral, phase2Content.Salt, username, privateKey);
 
-    HttpContent contentPhase3 = new StringContent(clientSession.Proof);
+    HttpContent contentPhase3 = new StringContent(
+        JsonSerializer.Serialize(clientSession.Proof),
+        Encoding.UTF8,
+        "application/json"
+    );
 
     ApiResult resultPhase3 = await api.SendRequestAsync("user/srp/2", HttpMethod.Post, contentPhase3, jwt: phase2Content.Token);
 
-    RequestResult requestResultPhase3 = RequestResult.FromApiResult(resultPhase3);
+    RequestResult requestResultPhase3 = await RequestResult.FromApiResult(resultPhase3);
     if (!requestResultPhase3.IsSuccess)
       return requestResultPhase3;
 
@@ -61,21 +67,11 @@ public class LoginRequestHandler(ApiClient apiClient, LoginInfoManager infoManag
 
   public async Task<RequestResult> Register(string username, string visibleName, string password)
   {
-    string formattedUsername = username.ToLower();
-
-    SrpClient srpClient = new();
-    string salt = srpClient.GenerateSalt();
-    string privateKey = srpClient.DerivePrivateKey(salt, formattedUsername, password);
-    string verifier = srpClient.DeriveVerifier(privateKey);
-
-    UserControllerRecords.CreateUserRequest contentRecord = new(formattedUsername,
-        visibleName, salt, verifier);
-
-    HttpContent content = JsonContent.Create(contentRecord);
+    HttpContent content = GenerateCreateRequest(username, visibleName, password);
 
     ApiResult result = await api.SendRequestAsync("user/create", HttpMethod.Post, content);
 
-    RequestResult requestResult = RequestResult.FromApiResult(result);
+    RequestResult requestResult = await RequestResult.FromApiResult(result);
 
     if (!result.IsSuccess)
       return requestResult;
@@ -88,5 +84,19 @@ public class LoginRequestHandler(ApiClient apiClient, LoginInfoManager infoManag
 
     info.SetJWTToStorage(response.TokenPair);
     return RequestResult.Success(result);
+  }
+
+  private HttpContent GenerateCreateRequest(string username, string password, string visibleName)
+  {
+    string formattedUsername = username.ToLower();
+    SrpClient srpClient = new();
+    string salt = srpClient.GenerateSalt();
+    string privateKey = srpClient.DerivePrivateKey(salt, formattedUsername, password);
+    string verifier = srpClient.DeriveVerifier(privateKey);
+
+    UserControllerRecords.CreateUserRequest contentRecord = new(formattedUsername,
+        visibleName, salt, verifier);
+
+    return JsonContent.Create(contentRecord);
   }
 }

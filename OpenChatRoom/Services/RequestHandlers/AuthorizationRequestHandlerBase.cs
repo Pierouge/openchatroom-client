@@ -15,13 +15,13 @@ public abstract class AuthorizationRequestHandlerBase(ApiClient api, LoginInfoMa
     if (result.IsSuccess && result.Response!.StatusCode == System.Net.HttpStatusCode.Unauthorized && jwtPair != null)
       return await UpdateJWTThenRetryAsync(endpoint, method, jwtPair.RefreshToken, content);
 
-    return RequestResult.FromApiResult(result);
+    return await RequestResult.FromApiResult(result);
   }
 
   private async Task<RequestResult> UpdateJWTThenRetryAsync(string endpoint, HttpMethod method, string refreshJwt, HttpContent? content = null)
   {
     ApiResult result = await ApiClient.SendRequestAsync("check/refresh", HttpMethod.Get, jwt: refreshJwt);
-    RequestResult requestResult = RequestResult.FromApiResult(result);
+    RequestResult requestResult = await RequestResult.FromApiResult(result);
 
     if (!requestResult.IsSuccess)
     {
@@ -37,7 +37,7 @@ public abstract class AuthorizationRequestHandlerBase(ApiClient api, LoginInfoMa
     infoManager.SetJWTToStorage(newJWTPair);
 
     ApiResult finalResult = await ApiClient.SendRequestAsync(endpoint, method, content, newJWTPair.Token);
-    return RequestResult.FromApiResult(finalResult);
+    return await RequestResult.FromApiResult(finalResult);
   }
 
 }
